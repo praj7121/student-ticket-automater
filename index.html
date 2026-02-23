@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FeedTrack – Student Feedback & Ticket Resolution Automator</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #f8f9fa;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+}
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e0e4e8;
+  position: fixed;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+.sidebar-brand {
+  padding: 24px 20px 12px;
+  border-bottom: 1px solid #e9ecef;
+}
+.sidebar-brand h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a73e8;
+  letter-spacing: -0.3px;
+}
+.sidebar-brand p {
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+  font-weight: 400;
+}
+.sidebar-nav {
+  list-style: none;
+  padding: 16px 0;
+  flex: 1;
+}
+.sidebar-nav li { position: relative; }
+.sidebar-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #555;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.sidebar-nav li a:hover {
+  background: #f0f5ff;
+  color: #1a73e8;
+}
+.sidebar-nav li a.active {
+  background: #e8f0fe;
+  color: #1a73e8;
+  border-left-color: #1a73e8;
+  font-weight: 600;
+}
+.sidebar-nav li a .nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+.badge {
+  background: #e53935;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #e9ecef;
+  font-size: 10px;
+  color: #aaa;
+  text-align: center;
+}
+
+/* ===== MAIN ===== */
+.main {
+  margin-left: 220px;
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: #ffffff;
+  border-bottom: 1px solid #e0e4e8;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-user .avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #1a73e8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.header-user span { font-size: 13px; color: #555; font-weight: 500; }
+
+/* ===== CONTENT ===== */
+.content { padding: 28px 32px; flex: 1; }
+
+/* ===== CARDS / STATS ===== */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 22px;
+  border: 1px solid #e9ecef;
+  transition: box-shadow 0.15s;
+}
+.stat-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.stat-card .stat-label { font-size: 12px; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card .stat-value { font-size: 30px; font-weight: 700; margin-top: 6px; }
+.stat-card.blue .stat-value { color: #1a73e8; }
+.stat-card.green .stat-value { color: #34a853; }
+.stat-card.orange .stat-value { color: #f9a825; }
+.stat-card.red .stat-value { color: #e53935; }
+
+/* ===== TABLE ===== */
+.card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+}
+.card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #222;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead th {
+  background: #f1f3f5;
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #555;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid #e0e4e8;
+}
+tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+}
+tbody tr:hover { background: #fafbfd; }
+
+/* ===== STATUS BADGES ===== */
+.status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status.open { background: #e3f2fd; color: #1565c0; }
+.status.in-progress { background: #fff8e1; color: #f57f17; }
+.status.resolved { background: #e8f5e9; color: #2e7d32; }
+.status.verified { background: #f3e5f5; color: #7b1fa2; }
+.priority-high { color: #e53935; font-weight: 600; }
+.priority-medium { color: #f9a825; font-weight: 600; }
+.priority-low { color: #34a853; font-weight: 600; }
+
+/* ===== BAR CHART ===== */
+.bar-chart { margin-top: 10px; }
+.bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+.bar-label { width: 120px; font-size: 12px; color: #555; font-weight: 500; text-align: right; }
+.bar-track { flex: 1; height: 22px; background: #f1f3f5; border-radius: 6px; overflow: hidden; }
+.bar-fill { height: 100%; background: #1a73e8; border-radius: 6px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: #fff; font-weight: 600; transition: width 0.4s; min-width: 28px; }
+
+/* ===== FORM ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.form-group { display: flex; flex-direction: column; }
+.form-group.full { grid-column: span 2; }
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #333;
+  outline: none;
+  transition: border 0.15s;
+  background: #fff;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: #1a73e8; }
+.form-group textarea { resize: vertical; min-height: 100px; }
+.btn {
+  padding: 11px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.btn-primary { background: #1a73e8; color: #fff; }
+.btn-primary:hover { background: #1557b0; }
+.btn-secondary { background: #f1f3f5; color: #555; border: 1px solid #ddd; }
+.btn-secondary:hover { background: #e9ecef; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-danger { background: #e53935; color: #fff; }
+.btn-danger:hover { background: #c62828; }
+.success-msg {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 16px;
+  display: none;
+}
+
+/* ===== FILTERS ===== */
+.filter-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filter-row .form-group { flex: 1; min-width: 160px; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 520px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+.modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 18px; color: #222; }
+.modal-detail { margin-bottom: 10px; font-size: 13px; color: #444; }
+.modal-detail strong { color: #222; }
+.modal-close {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #888;
+  line-height: 1;
+}
+.modal-close:hover { color: #333; }
+
+/* ===== PROGRESS BAR ===== */
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  margin: 24px 0;
+  position: relative;
+}
+.progress-steps::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 12%;
+  right: 12%;
+  height: 3px;
+  background: #e0e4e8;
+  z-index: 0;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+.step-circle {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #e0e4e8;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  transition: all 0.2s;
+}
+.step.active .step-circle { background: #1a73e8; color: #fff; }
+.step.done .step-circle { background: #34a853; color: #fff; }
+.step-label { font-size: 11px; color: #888; font-weight: 500; }
+.step.active .step-label, .step.done .step-label { color: #333; font-weight: 600; }
+
+/* ===== MINUTES OUTPUT ===== */
+.minutes-output {
+  background: #f8f9fa;
+  border: 1px solid #e0e4e8;
+  border-radius: 8px;
+  padding: 20px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: #333;
+  min-height: 120px;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ===== XML PREVIEW ===== */
+.xml-preview {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+/* ===== PROFILE ===== */
+.profile-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 32px;
+  max-width: 600px;
+}
+.profile-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #222; }
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+}
+.profile-row:last-child { border-bottom: none; }
+.profile-row .label { color: #888; font-weight: 500; }
+.profile-row .value { color: #333; font-weight: 500; }
+.team-list { margin-top: 20px; }
+.team-list h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #222; }
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #444;
+}
+.team-member .tm-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #e8f0fe;
+  color: #1a73e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ===== STAT MINI GRID ===== */
+.stat-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* ===== PAGE HIDE/SHOW ===== */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Scroll tweaks */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h2>📋 FeedTrack</h2>
+    <p>Woxsen University · SoT</p>
+  </div>
+  <ul class="sidebar-nav">
+    <li><a href="#" class="active" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a></li>
+    <li><a href="#" data-page="submit"><span class="nav-icon">✏️</span> Submit Feedback</a></li>
+    <li><a href="#" data-page="tracker"><span class="nav-icon">🎫</span> Ticket Tracker</a></li>
+    <li><a href="#" data-page="minutes"><span class="nav-icon">📝</span> Meeting Minutes</a></li>
+    <li><a href="#" data-page="report"><span class="nav-icon">📈</span> Monthly Report</a></li>
+    <li><a href="#" data-page="profile"><span class="nav-icon">👤</span> Profile</a></li>
+    <li><a href="#" id="alertsLink" data-page="tracker"><span class="nav-icon">🔔</span> Alerts <span class="badge" id="alertsBadge">0</span></a></li>
+  </ul>
+  <div class="sidebar-footer">© 2026 FeedTrack · School of Technology</div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- HEADER -->
+  <header class="header">
+    <h1 id="pageTitle">Dashboard</h1>
+    <div class="header-user">
+      <span>Prajwal Patil</span>
+      <div class="avatar">PP</div>
+    </div>
+  </header>
+
+  <!-- ========== DASHBOARD PAGE ========== -->
+  <div class="content">
+    <div id="page-dashboard" class="page active">
+      <div class="stat-row">
+        <div class="stat-card blue"><div class="stat-label">Total Tickets</div><div class="stat-value" id="statTotal">0</div></div>
+        <div class="stat-card green"><div class="stat-label">Resolved</div><div class="stat-value" id="statResolved">0</div></div>
+        <div class="stat-card orange"><div class="stat-label">In Progress</div><div class="stat-value" id="statProgress">0</div></div>
+        <div class="stat-card red"><div class="stat-label">Overdue</div><div class="stat-value" id="statOverdue">0</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Recent Tickets</h3>
+        <table>
+          <thead><tr><th>Ticket ID</th><th>Description</th><th>Department</th><th>Priority</th><th>Status</th></tr></thead>
+          <tbody id="recentTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Tickets by Department</h3>
+        <div class="bar-chart" id="deptChart"></div>
+      </div>
+    </div>
+
+    <!-- ========== SUBMIT FEEDBACK PAGE ========== -->
+    <div id="page-submit" class="page">
+      <div class="card" style="max-width:740px;">
+        <h3>Submit New Feedback</h3>
+        <form id="feedbackForm" class="form-grid">
+          <div class="form-group">
+            <label>Student Name</label>
+            <input type="text" id="fName" required placeholder="Enter full name">
+          </div>
+          <div class="form-group">
+            <label>Roll Number</label>
+            <input type="text" id="fRoll" required placeholder="e.g. 24WU0101101">
+          </div>
+          <div class="form-group">
+            <label>Department</label>
+            <select id="fDept" required>
+              <option value="">Select department</option>
+              <option>Computer Science</option>
+              <option>Business</option>
+              <option>Design</option>
+              <option>Liberal Arts</option>
+              <option>Architecture</option>
+              <option>Law</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="fCategory" required>
+              <option value="">Select category</option>
+              <option>IT Issue</option>
+              <option>Classroom Issue</option>
+              <option>Admin Request</option>
+              <option>Infrastructure</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="fPriority" required>
+              <option value="">Select priority</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="fDate" required>
+          </div>
+          <div class="form-group full">
+            <label>Feedback Description</label>
+            <textarea id="fDesc" required placeholder="Describe the issue or feedback in detail..."></textarea>
+          </div>
+          <div class="form-group full" style="flex-direction:row; gap:12px;">
+            <button type="submit" class="btn btn-primary">Submit &amp; Generate Ticket</button>
+            <button type="reset" class="btn btn-secondary">Clear</button>
+          </div>
+        </form>
+        <div id="submitSuccess" class="success-msg">✅ Ticket submitted successfully! Your Ticket ID has been generated.</div>
+      </div>
+    </div>
+
+    <!-- ========== TICKET TRACKER PAGE ========== -->
+    <div id="page-tracker" class="page">
+      <div class="card">
+        <h3>Ticket Tracker</h3>
+        <div class="filter-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select id="filterStatus"><option value="">All</option><option>Open</option><option>In-Progress</option><option>Resolved</option><option>Verified</option></select>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="filterCategory"><option value="">All</option><option>IT Issue</option><option>Classroom Issue</option><option>Admin Request</option><option>Infrastructure</option></select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="filterPriority"><option value="">All</option><option>High</option><option>Medium</option><option>Low</option></select>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Ticket ID</th><th>Description</th><th>Department</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="trackerTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== MEETING MINUTES PAGE ========== -->
+    <div id="page-minutes" class="page">
+      <div class="card" style="max-width:700px;">
+        <h3>Meeting Minutes Generator</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Meeting Date</label>
+            <input type="date" id="mDate">
+          </div>
+          <div class="form-group">
+            <label>Chaired By</label>
+            <input type="text" id="mChair" placeholder="e.g. Dr. Syed Javeed">
+          </div>
+          <div class="form-group full">
+            <label>Attendees</label>
+            <input type="text" id="mAttendees" placeholder="e.g. Deepti, Daksha, Hansika, Pranav, Prajwal">
+          </div>
+          <div class="form-group full">
+            <button type="button" class="btn btn-primary" onclick="generateMinutes()">Generate Minutes</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="max-width:700px; margin-top:20px;">
+        <h3>Generated Meeting Minutes</h3>
+        <div class="minutes-output" id="minutesOutput">Click "Generate Minutes" to auto-generate meeting minutes based on current open action items.</div>
+      </div>
+    </div>
+
+    <!-- ========== MONTHLY REPORT PAGE ========== -->
+    <div id="page-report" class="page">
+      <div class="stat-grid-6">
+        <div class="stat-card blue"><div class="stat-label">Total Tickets</div><div class="stat-value" id="rptTotal">0</div></div>
+        <div class="stat-card green"><div class="stat-label">Resolved</div><div class="stat-value" id="rptResolved">0</div></div>
+        <div class="stat-card" style="border-left:3px solid #1a73e8;"><div class="stat-label">Resolution Rate</div><div class="stat-value" id="rptRate" style="color:#1a73e8;">0%</div></div>
+        <div class="stat-card" style="border-left:3px solid #f9a825;"><div class="stat-label">Avg Resolution Time</div><div class="stat-value" id="rptAvg" style="color:#f9a825;">—</div></div>
+        <div class="stat-card orange"><div class="stat-label">Still Open</div><div class="stat-value" id="rptOpen">0</div></div>
+        <div class="stat-card red"><div class="stat-label">Alerts Sent</div><div class="stat-value" id="rptAlerts">0</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="card">
+          <h3>Tickets by Department</h3>
+          <div class="bar-chart" id="rptDeptChart"></div>
+        </div>
+        <div class="card">
+          <h3>Resolution Rate by Month</h3>
+          <div class="bar-chart" id="rptMonthChart"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>XML Report Export Preview</h3>
+        <div class="xml-preview" id="xmlPreview"></div>
+      </div>
+    </div>
+
+    <!-- ========== PROFILE PAGE ========== -->
+    <div id="page-profile" class="page">
+      <div class="profile-card">
+        <h3>Team Profile</h3>
+        <div class="profile-row"><span class="label">University</span><span class="value">Woxsen University, School of Technology</span></div>
+        <div class="profile-row"><span class="label">Supervisor</span><span class="value">Dr. Syed Javeed</span></div>
+        <div class="profile-row"><span class="label">Project</span><span class="value">FeedTrack – Student Feedback & Ticket Resolution Automator</span></div>
+        <div class="profile-row">
+          <span class="label">Display Name</span>
+          <span class="value" id="profileName">Prajwal Patil</span>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-secondary btn-sm" onclick="editProfile()">✏️ Edit Profile</button>
+        </div>
+
+        <div class="team-list">
+          <h4>Team Members</h4>
+          <div class="team-member"><div class="tm-avatar">DK</div><div>Deepti Kalakoti <span style="color:#888;">— 24WU0101068</span></div></div>
+          <div class="team-member"><div class="tm-avatar">DR</div><div>Daksha Reddy <span style="color:#888;">— 24WU0101081</span></div></div>
+          <div class="team-member"><div class="tm-avatar">H</div><div>Hansika <span style="color:#888;">— 24WU0101110</span></div></div>
+          <div class="team-member"><div class="tm-avatar">P</div><div>Pranav <span style="color:#888;">— 24WU0101087</span></div></div>
+          <div class="team-member"><div class="tm-avatar">PP</div><div>Prajwal Patil <span style="color:#888;">— 24WU0101101</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="ticketModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3 id="modalTitle">Ticket Details</h3>
+    <div id="modalBody"></div>
+    <div class="progress-steps" id="modalProgress"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn btn-primary btn-sm" id="advanceBtn" onclick="advanceStatus()">Advance Status →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const STATUS_ORDER = ['Open', 'In-Progress', 'Resolved', 'Verified'];
+let tickets = [
+  { id: 'TKT-001', name: 'Deepti Kalakoti', roll: '24WU0101068', dept: 'Computer Science', category: 'IT Issue', priority: 'High', date: '2026-02-10', description: 'Wi-Fi connectivity drops frequently in Block C labs during afternoon sessions.', status: 'Open' },
+  { id: 'TKT-002', name: 'Daksha Reddy', roll: '24WU0101081', dept: 'Business', category: 'Classroom Issue', priority: 'Medium', date: '2026-02-12', description: 'Projector in Room 202 has color distortion, making presentations unreadable.', status: 'In-Progress' },
+  { id: 'TKT-003', name: 'Hansika', roll: '24WU0101110', dept: 'Design', category: 'Infrastructure', priority: 'Low', date: '2026-02-14', description: 'Water cooler on 3rd floor is not working since last week.', status: 'Resolved' },
+  { id: 'TKT-004', name: 'Pranav', roll: '24WU0101087', dept: 'Computer Science', category: 'Admin Request', priority: 'Medium', date: '2026-02-15', description: 'Request for new student ID card — old card damaged.', status: 'Verified' },
+  { id: 'TKT-005', name: 'Prajwal Patil', roll: '24WU0101101', dept: 'Computer Science', category: 'IT Issue', priority: 'High', date: '2026-02-16', description: 'Software license for Adobe Creative Suite expired on lab machines.', status: 'Open' },
+  { id: 'TKT-006', name: 'Deepti Kalakoti', roll: '24WU0101068', dept: 'Liberal Arts', category: 'Classroom Issue', priority: 'Low', date: '2026-02-17', description: 'Broken chair in seminar hall A needs replacement.', status: 'In-Progress' },
+  { id: 'TKT-007', name: 'Daksha Reddy', roll: '24WU0101081', dept: 'Architecture', category: 'Infrastructure', priority: 'High', date: '2026-02-18', description: 'Leaking ceiling in Architecture Studio causing water damage to student work.', status: 'Open' },
+  { id: 'TKT-008', name: 'Hansika', roll: '24WU0101110', dept: 'Law', category: 'Admin Request', priority: 'Medium', date: '2026-02-20', description: 'Library access card not scanning properly at the entrance gate.', status: 'Resolved' },
+  { id: 'TKT-009', name: 'Pranav', roll: '24WU0101087', dept: 'Business', category: 'IT Issue', priority: 'High', date: '2026-02-21', description: 'ERP portal login shows error 500 when accessing course registration.', status: 'Open' },
+  { id: 'TKT-010', name: 'Prajwal Patil', roll: '24WU0101101', dept: 'Design', category: 'Infrastructure', priority: 'Low', date: '2026-02-22', description: 'Restroom in Design block requires maintenance — broken door latch.', status: 'In-Progress' },
+];
+
+let ticketCounter = tickets.length;
+let currentModalTicket = null;
+
+// ===== NAVIGATION =====
+document.querySelectorAll('.sidebar-nav a').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const page = link.getAttribute('data-page');
+    switchPage(page);
+  });
+});
+
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  const navLink = document.querySelector('.sidebar-nav a[data-page="' + page + '"]');
+  if (navLink) navLink.classList.add('active');
+  const titles = { dashboard: 'Dashboard', submit: 'Submit Feedback', tracker: 'Ticket Tracker', minutes: 'Meeting Minutes Generator', report: 'Monthly Report', profile: 'Profile' };
+  document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'tracker') renderTracker();
+  if (page === 'report') renderReport();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const total = tickets.length;
+  const resolved = tickets.filter(t => t.status === 'Resolved' || t.status === 'Verified').length;
+  const inProgress = tickets.filter(t => t.status === 'In-Progress').length;
+  const overdue = tickets.filter(t => t.status === 'Open' && daysDiff(t.date) > 5).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statResolved').textContent = resolved;
+  document.getElementById('statProgress').textContent = inProgress;
+  document.getElementById('statOverdue').textContent = overdue;
+
+  // Recent table (last 5)
+  const recent = [...tickets].reverse().slice(0, 5);
+  let html = '';
+  recent.forEach(t => {
+    html += `<tr>
+      <td><strong>${t.id}</strong></td>
+      <td>${truncate(t.description, 50)}</td>
+      <td>${t.dept}</td>
+      <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
+      <td><span class="status ${statusClass(t.status)}">${t.status}</span></td>
+    </tr>`;
+  });
+  document.getElementById('recentTable').innerHTML = html;
+
+  // Department chart
+  renderDeptChart('deptChart');
+  updateAlerts();
+}
+
+function renderDeptChart(containerId) {
+  const depts = {};
+  tickets.forEach(t => { depts[t.dept] = (depts[t.dept] || 0) + 1; });
+  const max = Math.max(...Object.values(depts), 1);
+  let html = '';
+  Object.entries(depts).sort((a, b) => b[1] - a[1]).forEach(([dept, count]) => {
+    const pct = (count / max) * 100;
+    html += `<div class="bar-row"><span class="bar-label">${dept}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%">${count}</div></div></div>`;
+  });
+  document.getElementById(containerId).innerHTML = html;
+}
+
+// ===== SUBMIT FEEDBACK =====
+document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  ticketCounter++;
+  const newTicket = {
+    id: 'TKT-' + String(ticketCounter).padStart(3, '0'),
+    name: document.getElementById('fName').value.trim(),
+    roll: document.getElementById('fRoll').value.trim(),
+    dept: document.getElementById('fDept').value,
+    category: document.getElementById('fCategory').value,
+    priority: document.getElementById('fPriority').value,
+    date: document.getElementById('fDate').value,
+    description: document.getElementById('fDesc').value.trim(),
+    status: 'Open'
+  };
+  tickets.push(newTicket);
+  const msg = document.getElementById('submitSuccess');
+  msg.textContent = `✅ Ticket ${newTicket.id} submitted successfully! Your ticket has been generated.`;
+  msg.style.display = 'block';
+  this.reset();
+  updateAlerts();
+  setTimeout(() => { msg.style.display = 'none'; }, 4000);
+});
+
+// ===== TICKET TRACKER =====
+function renderTracker() {
+  const sf = document.getElementById('filterStatus').value;
+  const cf = document.getElementById('filterCategory').value;
+  const pf = document.getElementById('filterPriority').value;
+  let filtered = tickets.filter(t => {
+    if (sf && t.status !== sf) return false;
+    if (cf && t.category !== cf) return false;
+    if (pf && t.priority !== pf) return false;
+    return true;
+  });
+  let html = '';
+  filtered.forEach(t => {
+    html += `<tr>
+      <td><strong>${t.id}</strong></td>
+      <td>${truncate(t.description, 45)}</td>
+      <td>${t.dept}</td>
+      <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
+      <td><span class="status ${statusClass(t.status)}">${t.status}</span></td>
+      <td><button class="btn btn-primary btn-sm" onclick="openModal('${t.id}')">View / Update</button></td>
+    </tr>`;
+  });
+  document.getElementById('trackerTable').innerHTML = html;
+}
+
+['filterStatus', 'filterCategory', 'filterPriority'].forEach(id => {
+  document.getElementById(id).addEventListener('change', renderTracker);
+});
+
+// ===== MODAL =====
+function openModal(id) {
+  const t = tickets.find(x => x.id === id);
+  if (!t) return;
+  currentModalTicket = t;
+  document.getElementById('modalTitle').textContent = t.id + ' — Ticket Details';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-detail"><strong>Student:</strong> ${t.name} (${t.roll})</div>
+    <div class="modal-detail"><strong>Department:</strong> ${t.dept}</div>
+    <div class="modal-detail"><strong>Category:</strong> ${t.category}</div>
+    <div class="modal-detail"><strong>Priority:</strong> <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></div>
+    <div class="modal-detail"><strong>Date:</strong> ${t.date}</div>
+    <div class="modal-detail"><strong>Description:</strong> ${t.description}</div>
+    <div class="modal-detail"><strong>Current Status:</strong> <span class="status ${statusClass(t.status)}">${t.status}</span></div>
+  `;
+  renderProgress(t.status);
+  const btn = document.getElementById('advanceBtn');
+  btn.style.display = t.status === 'Verified' ? 'none' : 'inline-block';
+  document.getElementById('ticketModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('ticketModal').classList.remove('show');
+  currentModalTicket = null;
+}
+
+document.getElementById('ticketModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function renderProgress(status) {
+  const idx = STATUS_ORDER.indexOf(status);
+  let html = '';
+  STATUS_ORDER.forEach((s, i) => {
+    let cls = '';
+    if (i < idx) cls = 'done';
+    else if (i === idx) cls = 'active';
+    const icons = ['📩', '🔧', '✅', '🏁'];
+    html += `<div class="step ${cls}"><div class="step-circle">${icons[i]}</div><div class="step-label">${s}</div></div>`;
+  });
+  document.getElementById('modalProgress').innerHTML = html;
+}
+
+function advanceStatus() {
+  if (!currentModalTicket) return;
+  const idx = STATUS_ORDER.indexOf(currentModalTicket.status);
+  if (idx < STATUS_ORDER.length - 1) {
+    currentModalTicket.status = STATUS_ORDER[idx + 1];
+    openModal(currentModalTicket.id);
+    renderTracker();
+    updateAlerts();
+  }
+}
+
+// ===== MEETING MINUTES =====
+function generateMinutes() {
+  const date = document.getElementById('mDate').value || new Date().toISOString().split('T')[0];
+  const chair = document.getElementById('mChair').value || 'Dr. Syed Javeed';
+  const attendees = document.getElementById('mAttendees').value || 'Deepti, Daksha, Hansika, Pranav, Prajwal';
+  const openTickets = tickets.filter(t => t.status === 'Open' || t.status === 'In-Progress');
+
+  let text = `═══════════════════════════════════════════\n`;
+  text += `  MEETING MINUTES — FeedTrack Review\n`;
+  text += `═══════════════════════════════════════════\n\n`;
+  text += `Date      : ${date}\n`;
+  text += `Chaired By: ${chair}\n`;
+  text += `Attendees : ${attendees}\n\n`;
+  text += `───────────────────────────────────────────\n`;
+  text += `  OPEN ACTION ITEMS (${openTickets.length})\n`;
+  text += `───────────────────────────────────────────\n\n`;
+
+  if (openTickets.length === 0) {
+    text += `  ✅ No open action items. All tickets resolved.\n`;
+  } else {
+    openTickets.forEach((t, i) => {
+      text += `  ${i + 1}. [${t.id}] ${t.description}\n`;
+      text += `     Dept: ${t.dept} | Priority: ${t.priority} | Status: ${t.status}\n`;
+      text += `     Assigned: ${t.name} | Date: ${t.date}\n\n`;
+    });
+  }
+
+  text += `───────────────────────────────────────────\n`;
+  text += `  SUMMARY\n`;
+  text += `───────────────────────────────────────────\n\n`;
+  text += `  Total Tickets  : ${tickets.length}\n`;
+  text += `  Open           : ${tickets.filter(t => t.status === 'Open').length}\n`;
+  text += `  In-Progress    : ${tickets.filter(t => t.status === 'In-Progress').length}\n`;
+  text += `  Resolved       : ${tickets.filter(t => t.status === 'Resolved').length}\n`;
+  text += `  Verified       : ${tickets.filter(t => t.status === 'Verified').length}\n\n`;
+  text += `═══════════════════════════════════════════\n`;
+  text += `  Minutes auto-generated by FeedTrack\n`;
+  text += `  Woxsen University, School of Technology\n`;
+  text += `═══════════════════════════════════════════`;
+
+  document.getElementById('minutesOutput').textContent = text;
+}
+
+// ===== MONTHLY REPORT =====
+function renderReport() {
+  const total = tickets.length;
+  const resolved = tickets.filter(t => t.status === 'Resolved' || t.status === 'Verified').length;
+  const open = tickets.filter(t => t.status === 'Open' || t.status === 'In-Progress').length;
+  const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+  const overdue = tickets.filter(t => t.status === 'Open' && daysDiff(t.date) > 5).length;
+
+  document.getElementById('rptTotal').textContent = total;
+  document.getElementById('rptResolved').textContent = resolved;
+  document.getElementById('rptRate').textContent = rate + '%';
+  document.getElementById('rptAvg').textContent = '2.4 days';
+  document.getElementById('rptOpen').textContent = open;
+  document.getElementById('rptAlerts').textContent = overdue;
+
+  renderDeptChart('rptDeptChart');
+
+  // Monthly chart
+  const months = ['Nov', 'Dec', 'Jan', 'Feb'];
+  const rates = [65, 72, 80, rate];
+  const maxR = 100;
+  let mhtml = '';
+  months.forEach((m, i) => {
+    const pct = (rates[i] / maxR) * 100;
+    const color = rates[i] >= 75 ? '#34a853' : rates[i] >= 50 ? '#f9a825' : '#e53935';
+    mhtml += `<div class="bar-row"><span class="bar-label">${m}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}">${rates[i]}%</div></div></div>`;
+  });
+  document.getElementById('rptMonthChart').innerHTML = mhtml;
+
+  // XML Preview
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<FeedTrackReport>\n  <meta>\n    <generatedAt>${new Date().toISOString()}</generatedAt>\n    <university>Woxsen University</university>\n    <school>School of Technology</school>\n  </meta>\n  <summary>\n    <totalTickets>${total}</totalTickets>\n    <resolved>${resolved}</resolved>\n    <resolutionRate>${rate}%</resolutionRate>\n    <avgResolutionTime>2.4 days</avgResolutionTime>\n    <stillOpen>${open}</stillOpen>\n    <alertsSent>${overdue}</alertsSent>\n  </summary>\n  <tickets>\n`;
+  tickets.forEach(t => {
+    xml += `    <ticket id="${t.id}" status="${t.status}" priority="${t.priority}">\n      <department>${t.dept}</department>\n      <category>${t.category}</category>\n      <description>${escapeXml(t.description)}</description>\n    </ticket>\n`;
+  });
+  xml += `  </tickets>\n</FeedTrackReport>`;
+  document.getElementById('xmlPreview').textContent = xml;
+}
+
+// ===== PROFILE =====
+function editProfile() {
+  const current = document.getElementById('profileName').textContent;
+  const newName = prompt('Enter new display name:', current);
+  if (newName && newName.trim()) {
+    document.getElementById('profileName').textContent = newName.trim();
+    document.querySelector('.header-user span').textContent = newName.trim();
+    const initials = newName.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    document.querySelector('.header-user .avatar').textContent = initials;
+  }
+}
+
+// ===== ALERTS =====
+function updateAlerts() {
+  const open = tickets.filter(t => t.status === 'Open' || t.status === 'In-Progress').length;
+  document.getElementById('alertsBadge').textContent = open;
+}
+
+// ===== HELPERS =====
+function statusClass(s) {
+  return s.toLowerCase().replace(/\s+/g, '-');
+}
+function truncate(str, len) {
+  return str.length > len ? str.substring(0, len) + '…' : str;
+}
+function daysDiff(dateStr) {
+  return Math.floor((new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24));
+}
+function escapeXml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== SET TODAY =====
+document.getElementById('fDate').valueAsDate = new Date();
+
+// ===== INIT =====
+renderDashboard();
+</script>
+</body>
+</html>
