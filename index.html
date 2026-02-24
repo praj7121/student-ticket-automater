@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FeedTrack – Student Feedback & Ticket Resolution Automator</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <style>
     /* ===== RESET & BASE ===== */
     *,
@@ -1065,6 +1066,15 @@
             </thead>
             <tbody id="trackerTable"></tbody>
           </table>
+          <div style="margin-top:16px; display:flex; gap:10px;">
+            <button class="btn btn-secondary btn-sm" onclick="exportCSV()"><svg width="13" height="13"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>Export CSV</button>
+          </div>
         </div>
       </div>
 
@@ -1207,22 +1217,9 @@
   </div>
 
   <script>
-    // ===== DATA =====
+    // ===== CONSTANTS =====
+    const API_BASE = 'api';
     const STATUS_ORDER = ['Open', 'In-Progress', 'Resolved', 'Verified'];
-    let tickets = [
-      { id: 'TKT-001', name: 'Deepti Kalakoti', roll: '24WU0101068', dept: 'Computer Science', category: 'IT Issue', priority: 'High', date: '2026-02-10', description: 'Wi-Fi connectivity drops frequently in Block C labs during afternoon sessions.', status: 'Open' },
-      { id: 'TKT-002', name: 'Daksha Reddy', roll: '24WU0101081', dept: 'Business', category: 'Classroom Issue', priority: 'Medium', date: '2026-02-12', description: 'Projector in Room 202 has color distortion, making presentations unreadable.', status: 'In-Progress' },
-      { id: 'TKT-003', name: 'Hansika', roll: '24WU0101110', dept: 'Design', category: 'Infrastructure', priority: 'Low', date: '2026-02-14', description: 'Water cooler on 3rd floor is not working since last week.', status: 'Resolved' },
-      { id: 'TKT-004', name: 'Pranav', roll: '24WU0101087', dept: 'Computer Science', category: 'Admin Request', priority: 'Medium', date: '2026-02-15', description: 'Request for new student ID card — old card damaged.', status: 'Verified' },
-      { id: 'TKT-005', name: 'Prajwal Patil', roll: '24WU0101101', dept: 'Computer Science', category: 'IT Issue', priority: 'High', date: '2026-02-16', description: 'Software license for Adobe Creative Suite expired on lab machines.', status: 'Open' },
-      { id: 'TKT-006', name: 'Deepti Kalakoti', roll: '24WU0101068', dept: 'Liberal Arts', category: 'Classroom Issue', priority: 'Low', date: '2026-02-17', description: 'Broken chair in seminar hall A needs replacement.', status: 'In-Progress' },
-      { id: 'TKT-007', name: 'Daksha Reddy', roll: '24WU0101081', dept: 'Architecture', category: 'Infrastructure', priority: 'High', date: '2026-02-18', description: 'Leaking ceiling in Architecture Studio causing water damage to student work.', status: 'Open' },
-      { id: 'TKT-008', name: 'Hansika', roll: '24WU0101110', dept: 'Law', category: 'Admin Request', priority: 'Medium', date: '2026-02-20', description: 'Library access card not scanning properly at the entrance gate.', status: 'Resolved' },
-      { id: 'TKT-009', name: 'Pranav', roll: '24WU0101087', dept: 'Business', category: 'IT Issue', priority: 'High', date: '2026-02-21', description: 'ERP portal login shows error 500 when accessing course registration.', status: 'Open' },
-      { id: 'TKT-010', name: 'Prajwal Patil', roll: '24WU0101101', dept: 'Design', category: 'Infrastructure', priority: 'Low', date: '2026-02-22', description: 'Restroom in Design block requires maintenance — broken door latch.', status: 'In-Progress' },
-    ];
-
-    let ticketCounter = tickets.length;
     let currentModalTicket = null;
 
     // ===== NAVIGATION =====
@@ -1247,120 +1244,127 @@
       if (page === 'report') renderReport();
     }
 
-    // ===== DASHBOARD =====
+    // ===== DASHBOARD (AJAX) =====
     function renderDashboard() {
-      const total = tickets.length;
-      const resolved = tickets.filter(t => t.status === 'Resolved' || t.status === 'Verified').length;
-      const inProgress = tickets.filter(t => t.status === 'In-Progress').length;
-      const overdue = tickets.filter(t => t.status === 'Open' && daysDiff(t.date) > 5).length;
-      document.getElementById('statTotal').textContent = total;
-      document.getElementById('statResolved').textContent = resolved;
-      document.getElementById('statProgress').textContent = inProgress;
-      document.getElementById('statOverdue').textContent = overdue;
+      $.get(API_BASE + '/get_dashboard_stats.php', function (data) {
+        document.getElementById('statTotal').textContent = data.total;
+        document.getElementById('statResolved').textContent = data.resolved;
+        document.getElementById('statProgress').textContent = data.in_progress;
+        document.getElementById('statOverdue').textContent = data.overdue;
 
-      // Recent table (last 5)
-      const recent = [...tickets].reverse().slice(0, 5);
-      let html = '';
-      recent.forEach(t => {
-        html += `<tr>
-      <td><strong>${t.id}</strong></td>
-      <td>${truncate(t.description, 50)}</td>
-      <td>${t.dept}</td>
-      <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
-      <td><span class="status ${statusClass(t.status)}">${t.status}</span></td>
-    </tr>`;
+        // Recent tickets table
+        let html = '';
+        (data.recent || []).forEach(t => {
+          html += `<tr>
+            <td><strong>${t.ticket_id}</strong></td>
+            <td>${truncate(t.description, 50)}</td>
+            <td>${t.department}</td>
+            <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
+            <td><span class="status ${statusClass(t.status)}">${t.status}</span></td>
+          </tr>`;
+        });
+        document.getElementById('recentTable').innerHTML = html;
+
+        // Department chart
+        renderDeptChartFromData('deptChart', data.departments || []);
+
+        // Update alerts badge
+        const openCount = parseInt(data.total) - parseInt(data.resolved);
+        document.getElementById('alertsBadge').textContent = openCount;
+      }).fail(function (xhr) {
+        console.error('Dashboard load failed:', xhr.responseText);
+        alert('Failed to load dashboard data. Make sure the PHP backend is running.');
       });
-      document.getElementById('recentTable').innerHTML = html;
-
-      // Department chart
-      renderDeptChart('deptChart');
-      updateAlerts();
     }
 
-    function renderDeptChart(containerId) {
-      const depts = {};
-      tickets.forEach(t => { depts[t.dept] = (depts[t.dept] || 0) + 1; });
-      const max = Math.max(...Object.values(depts), 1);
+    function renderDeptChartFromData(containerId, departments) {
+      const max = departments.length > 0 ? Math.max(...departments.map(d => parseInt(d.count)), 1) : 1;
       let html = '';
-      Object.entries(depts).sort((a, b) => b[1] - a[1]).forEach(([dept, count]) => {
-        const pct = (count / max) * 100;
-        html += `<div class="bar-row"><span class="bar-label">${dept}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%">${count}</div></div></div>`;
+      departments.forEach(d => {
+        const pct = (parseInt(d.count) / max) * 100;
+        html += `<div class="bar-row"><span class="bar-label">${d.department}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%">${d.count}</div></div></div>`;
       });
       document.getElementById(containerId).innerHTML = html;
     }
 
-    // ===== SUBMIT FEEDBACK =====
+    // ===== SUBMIT FEEDBACK (AJAX) =====
     document.getElementById('feedbackForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      ticketCounter++;
-      const newTicket = {
-        id: 'TKT-' + String(ticketCounter).padStart(3, '0'),
-        name: document.getElementById('fName').value.trim(),
-        roll: document.getElementById('fRoll').value.trim(),
-        dept: document.getElementById('fDept').value,
+      const formData = {
+        student_name: document.getElementById('fName').value.trim(),
+        roll_number: document.getElementById('fRoll').value.trim(),
+        department: document.getElementById('fDept').value,
         category: document.getElementById('fCategory').value,
         priority: document.getElementById('fPriority').value,
-        date: document.getElementById('fDate').value,
-        description: document.getElementById('fDesc').value.trim(),
-        status: 'Open'
+        submission_date: document.getElementById('fDate').value,
+        description: document.getElementById('fDesc').value.trim()
       };
-      tickets.push(newTicket);
-      const msg = document.getElementById('submitSuccess');
-      msg.textContent = `✅ Ticket ${newTicket.id} submitted successfully! Your ticket has been generated.`;
-      msg.style.display = 'block';
-      this.reset();
-      updateAlerts();
-      setTimeout(() => { msg.style.display = 'none'; }, 4000);
+
+      $.post(API_BASE + '/create_ticket.php', formData, function (data) {
+        const msg = document.getElementById('submitSuccess');
+        msg.textContent = '✅ Ticket ' + data.ticket_id + ' submitted successfully! Your ticket has been generated.';
+        msg.style.display = 'block';
+        document.getElementById('feedbackForm').reset();
+        document.getElementById('fDate').valueAsDate = new Date();
+        setTimeout(() => { msg.style.display = 'none'; }, 4000);
+      }).fail(function (xhr) {
+        console.error('Submit failed:', xhr.responseText);
+        alert('Failed to submit ticket. Check the backend connection.');
+      });
     });
 
-    // ===== TICKET TRACKER =====
+    // ===== TICKET TRACKER (AJAX) =====
     function renderTracker() {
+      const params = {};
       const sf = document.getElementById('filterStatus').value;
       const cf = document.getElementById('filterCategory').value;
       const pf = document.getElementById('filterPriority').value;
-      let filtered = tickets.filter(t => {
-        if (sf && t.status !== sf) return false;
-        if (cf && t.category !== cf) return false;
-        if (pf && t.priority !== pf) return false;
-        return true;
+      if (sf) params.status = sf;
+      if (cf) params.category = cf;
+      if (pf) params.priority = pf;
+
+      $.get(API_BASE + '/get_tickets.php', params, function (tickets) {
+        let html = '';
+        tickets.forEach(t => {
+          html += `<tr>
+            <td><strong>${t.ticket_id}</strong></td>
+            <td>${truncate(t.description, 45)}</td>
+            <td>${t.department}</td>
+            <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
+            <td><span class="status ${statusClass(t.status)}">${t.status}</span></td>
+            <td><button class="btn btn-primary btn-sm" onclick="openModal('${t.ticket_id}')">View / Update</button></td>
+          </tr>`;
+        });
+        document.getElementById('trackerTable').innerHTML = html;
+      }).fail(function (xhr) {
+        console.error('Tracker load failed:', xhr.responseText);
       });
-      let html = '';
-      filtered.forEach(t => {
-        html += `<tr>
-      <td><strong>${t.id}</strong></td>
-      <td>${truncate(t.description, 45)}</td>
-      <td>${t.dept}</td>
-      <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
-      <td><span class="status ${statusClass(t.status)}">${t.status}</span></td>
-      <td><button class="btn btn-primary btn-sm" onclick="openModal('${t.id}')">View / Update</button></td>
-    </tr>`;
-      });
-      document.getElementById('trackerTable').innerHTML = html;
     }
 
     ['filterStatus', 'filterCategory', 'filterPriority'].forEach(id => {
       document.getElementById(id).addEventListener('change', renderTracker);
     });
 
-    // ===== MODAL =====
+    // ===== MODAL (AJAX) =====
     function openModal(id) {
-      const t = tickets.find(x => x.id === id);
-      if (!t) return;
-      currentModalTicket = t;
-      document.getElementById('modalTitle').textContent = t.id + ' — Ticket Details';
-      document.getElementById('modalBody').innerHTML = `
-    <div class="modal-detail"><strong>Student:</strong> ${t.name} (${t.roll})</div>
-    <div class="modal-detail"><strong>Department:</strong> ${t.dept}</div>
-    <div class="modal-detail"><strong>Category:</strong> ${t.category}</div>
-    <div class="modal-detail"><strong>Priority:</strong> <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></div>
-    <div class="modal-detail"><strong>Date:</strong> ${t.date}</div>
-    <div class="modal-detail"><strong>Description:</strong> ${t.description}</div>
-    <div class="modal-detail"><strong>Current Status:</strong> <span class="status ${statusClass(t.status)}">${t.status}</span></div>
-  `;
-      renderProgress(t.status);
-      const btn = document.getElementById('advanceBtn');
-      btn.style.display = t.status === 'Verified' ? 'none' : 'inline-block';
-      document.getElementById('ticketModal').classList.add('show');
+      $.get(API_BASE + '/get_tickets.php', {}, function (tickets) {
+        const t = tickets.find(x => x.ticket_id === id);
+        if (!t) return;
+        currentModalTicket = t;
+        document.getElementById('modalTitle').textContent = t.ticket_id + ' — Ticket Details';
+        document.getElementById('modalBody').innerHTML = `
+          <div class="modal-detail"><strong>Student:</strong> ${t.student_name} (${t.roll_number})</div>
+          <div class="modal-detail"><strong>Department:</strong> ${t.department}</div>
+          <div class="modal-detail"><strong>Category:</strong> ${t.category}</div>
+          <div class="modal-detail"><strong>Priority:</strong> <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></div>
+          <div class="modal-detail"><strong>Date:</strong> ${t.submission_date}</div>
+          <div class="modal-detail"><strong>Description:</strong> ${t.description}</div>
+          <div class="modal-detail"><strong>Current Status:</strong> <span class="status ${statusClass(t.status)}">${t.status}</span></div>
+        `;
+        renderProgress(t.status);
+        document.getElementById('advanceBtn').style.display = t.status === 'Verified' ? 'none' : 'inline-block';
+        document.getElementById('ticketModal').classList.add('show');
+      });
     }
 
     function closeModal() {
@@ -1390,96 +1394,78 @@
       document.getElementById('modalProgress').innerHTML = html;
     }
 
+    // ===== ADVANCE STATUS (AJAX) =====
     function advanceStatus() {
       if (!currentModalTicket) return;
       const idx = STATUS_ORDER.indexOf(currentModalTicket.status);
       if (idx < STATUS_ORDER.length - 1) {
-        currentModalTicket.status = STATUS_ORDER[idx + 1];
-        openModal(currentModalTicket.id);
-        renderTracker();
-        updateAlerts();
-      }
-    }
-
-    // ===== MEETING MINUTES =====
-    function generateMinutes() {
-      const date = document.getElementById('mDate').value || new Date().toISOString().split('T')[0];
-      const chair = document.getElementById('mChair').value || 'Dr. Syed Javeed';
-      const attendees = document.getElementById('mAttendees').value || 'Deepti, Daksha, Hansika, Pranav, Prajwal';
-      const openTickets = tickets.filter(t => t.status === 'Open' || t.status === 'In-Progress');
-
-      let text = `═══════════════════════════════════════════\n`;
-      text += `  MEETING MINUTES — FeedTrack Review\n`;
-      text += `═══════════════════════════════════════════\n\n`;
-      text += `Date      : ${date}\n`;
-      text += `Chaired By: ${chair}\n`;
-      text += `Attendees : ${attendees}\n\n`;
-      text += `───────────────────────────────────────────\n`;
-      text += `  OPEN ACTION ITEMS (${openTickets.length})\n`;
-      text += `───────────────────────────────────────────\n\n`;
-
-      if (openTickets.length === 0) {
-        text += `  ✅ No open action items. All tickets resolved.\n`;
-      } else {
-        openTickets.forEach((t, i) => {
-          text += `  ${i + 1}. [${t.id}] ${t.description}\n`;
-          text += `     Dept: ${t.dept} | Priority: ${t.priority} | Status: ${t.status}\n`;
-          text += `     Assigned: ${t.name} | Date: ${t.date}\n\n`;
+        const newStatus = STATUS_ORDER[idx + 1];
+        $.post(API_BASE + '/update_status.php', {
+          ticket_id: currentModalTicket.ticket_id,
+          status: newStatus
+        }, function (data) {
+          if (data.success) {
+            openModal(currentModalTicket.ticket_id);
+            renderTracker();
+            renderDashboard();
+          }
+        }).fail(function (xhr) {
+          console.error('Status update failed:', xhr.responseText);
+          alert('Failed to update status.');
         });
       }
-
-      text += `───────────────────────────────────────────\n`;
-      text += `  SUMMARY\n`;
-      text += `───────────────────────────────────────────\n\n`;
-      text += `  Total Tickets  : ${tickets.length}\n`;
-      text += `  Open           : ${tickets.filter(t => t.status === 'Open').length}\n`;
-      text += `  In-Progress    : ${tickets.filter(t => t.status === 'In-Progress').length}\n`;
-      text += `  Resolved       : ${tickets.filter(t => t.status === 'Resolved').length}\n`;
-      text += `  Verified       : ${tickets.filter(t => t.status === 'Verified').length}\n\n`;
-      text += `═══════════════════════════════════════════\n`;
-      text += `  Minutes auto-generated by FeedTrack\n`;
-      text += `  Woxsen University, School of Technology\n`;
-      text += `═══════════════════════════════════════════`;
-
-      document.getElementById('minutesOutput').textContent = text;
     }
 
-    // ===== MONTHLY REPORT =====
+    // ===== MEETING MINUTES (AJAX) =====
+    function generateMinutes() {
+      const formData = {
+        meeting_date: document.getElementById('mDate').value || new Date().toISOString().split('T')[0],
+        chaired_by: document.getElementById('mChair').value || 'Dr. Syed Javeed',
+        attendees: document.getElementById('mAttendees').value || 'Deepti, Daksha, Hansika, Pranav, Prajwal'
+      };
+
+      $.post(API_BASE + '/generate_minutes.php', formData, function (data) {
+        document.getElementById('minutesOutput').textContent = data.content;
+      }).fail(function (xhr) {
+        console.error('Minutes generation failed:', xhr.responseText);
+        alert('Failed to generate minutes.');
+      });
+    }
+
+    // ===== MONTHLY REPORT (AJAX) =====
     function renderReport() {
-      const total = tickets.length;
-      const resolved = tickets.filter(t => t.status === 'Resolved' || t.status === 'Verified').length;
-      const open = tickets.filter(t => t.status === 'Open' || t.status === 'In-Progress').length;
-      const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
-      const overdue = tickets.filter(t => t.status === 'Open' && daysDiff(t.date) > 5).length;
+      $.get(API_BASE + '/get_monthly_report.php', function (data) {
+        document.getElementById('rptTotal').textContent = data.total;
+        document.getElementById('rptResolved').textContent = data.resolved;
+        document.getElementById('rptRate').textContent = data.resolution_rate + '%';
+        document.getElementById('rptAvg').textContent = data.avg_resolution_days + ' days';
+        document.getElementById('rptOpen').textContent = data.still_open;
+        document.getElementById('rptAlerts').textContent = data.alerts_sent;
 
-      document.getElementById('rptTotal').textContent = total;
-      document.getElementById('rptResolved').textContent = resolved;
-      document.getElementById('rptRate').textContent = rate + '%';
-      document.getElementById('rptAvg').textContent = '2.4 days';
-      document.getElementById('rptOpen').textContent = open;
-      document.getElementById('rptAlerts').textContent = overdue;
+        // Department chart
+        renderDeptChartFromData('rptDeptChart', data.departments || []);
 
-      renderDeptChart('rptDeptChart');
+        // Monthly resolution rate chart
+        const monthlyRates = data.monthly_rates || [];
+        let mhtml = '';
+        monthlyRates.forEach(m => {
+          const pct = (m.rate / 100) * 100;
+          const color = m.rate >= 75 ? '#34a853' : m.rate >= 50 ? '#f9a825' : '#e53935';
+          mhtml += `<div class="bar-row"><span class="bar-label">${m.month}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}">${m.rate}%</div></div></div>`;
+        });
+        document.getElementById('rptMonthChart').innerHTML = mhtml;
 
-      // Monthly chart
-      const months = ['Nov', 'Dec', 'Jan', 'Feb'];
-      const rates = [65, 72, 80, rate];
-      const maxR = 100;
-      let mhtml = '';
-      months.forEach((m, i) => {
-        const pct = (rates[i] / maxR) * 100;
-        const color = rates[i] >= 75 ? '#34a853' : rates[i] >= 50 ? '#f9a825' : '#e53935';
-        mhtml += `<div class="bar-row"><span class="bar-label">${m}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}">${rates[i]}%</div></div></div>`;
+        // XML Preview
+        document.getElementById('xmlPreview').textContent = data.xml || '';
+      }).fail(function (xhr) {
+        console.error('Report load failed:', xhr.responseText);
+        alert('Failed to load report data.');
       });
-      document.getElementById('rptMonthChart').innerHTML = mhtml;
+    }
 
-      // XML Preview
-      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<FeedTrackReport>\n  <meta>\n    <generatedAt>${new Date().toISOString()}</generatedAt>\n    <university>Woxsen University</university>\n    <school>School of Technology</school>\n  </meta>\n  <summary>\n    <totalTickets>${total}</totalTickets>\n    <resolved>${resolved}</resolved>\n    <resolutionRate>${rate}%</resolutionRate>\n    <avgResolutionTime>2.4 days</avgResolutionTime>\n    <stillOpen>${open}</stillOpen>\n    <alertsSent>${overdue}</alertsSent>\n  </summary>\n  <tickets>\n`;
-      tickets.forEach(t => {
-        xml += `    <ticket id="${t.id}" status="${t.status}" priority="${t.priority}">\n      <department>${t.dept}</department>\n      <category>${t.category}</category>\n      <description>${escapeXml(t.description)}</description>\n    </ticket>\n`;
-      });
-      xml += `  </tickets>\n</FeedTrackReport>`;
-      document.getElementById('xmlPreview').textContent = xml;
+    // ===== EXPORT CSV =====
+    function exportCSV() {
+      window.location.href = API_BASE + '/export_csv.php';
     }
 
     // ===== PROFILE =====
@@ -1494,24 +1480,12 @@
       }
     }
 
-    // ===== ALERTS =====
-    function updateAlerts() {
-      const open = tickets.filter(t => t.status === 'Open' || t.status === 'In-Progress').length;
-      document.getElementById('alertsBadge').textContent = open;
-    }
-
     // ===== HELPERS =====
     function statusClass(s) {
       return s.toLowerCase().replace(/\s+/g, '-');
     }
     function truncate(str, len) {
       return str.length > len ? str.substring(0, len) + '…' : str;
-    }
-    function daysDiff(dateStr) {
-      return Math.floor((new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24));
-    }
-    function escapeXml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     // ===== SET TODAY =====
